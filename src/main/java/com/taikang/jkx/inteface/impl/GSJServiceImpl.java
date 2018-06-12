@@ -1,4 +1,4 @@
-package com.taikang.ai;
+package com.taikang.jkx.inteface.impl;
 
 import java.io.IOException;
 
@@ -18,21 +18,22 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.springframework.stereotype.Service;
 
-import org.junit.Test;
+import com.taikang.jkx.inteface.GSJService;
 
-public class HttpClientTest {
+/**
+ * 实现操作国税局网站的相关操作
+ * @author zhangqh27
+ *
+ */
+@Service
+public class GSJServiceImpl implements GSJService {
 
-	/**
-	 * 测试HttpClient
-	 * 
-	 * @throws IOException
-	 * @throws ClientProtocolException
-	 */
-	@Test
-	public void fun3() throws ClientProtocolException, IOException {
+	@Override
+	public String getSessionIDFromGsj(String userId) throws ClientProtocolException, IOException {
 		
-		@SuppressWarnings("unused")
+		//先从数据库中查看当前微信用户是否已存在sessionID。
 		String JSESSIONID = "";
 		//创建客户端
 		HttpClientBuilder create = HttpClientBuilder.create();
@@ -85,7 +86,7 @@ public class HttpClientTest {
 		}
 		
 		client.close();
-		
+		return JSESSIONID;
 	}
-	
+
 }
