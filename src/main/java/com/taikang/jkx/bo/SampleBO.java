@@ -1,4 +1,4 @@
-package com.taikang.jkx;
+package com.taikang.jkx.bo;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.xml.sax.SAXException;
 
 import com.baidu.aip.ocr.AipOcr;
-import com.taikang.jkx.SampleBO;
+import com.taikang.jkx.bo.SampleBO;
 
 @RestController
 public class WXController {
