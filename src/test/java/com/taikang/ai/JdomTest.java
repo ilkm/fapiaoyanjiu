@@ -16,7 +16,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 @SuppressWarnings("deprecation")
-public class TestS {
+public class JdomTest {
 
 	@Test
 	public void fun1() {
