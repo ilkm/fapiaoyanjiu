@@ -6,4 +6,6 @@ proxy:
   port: 3088
   username: zhangqh27
   password: El250816
-gsjUrl: "https://59.173.248.30:7013/include1/cx_sgfplxcx.jsp"
+gsj:
+  gsjUrl: "https://59.173.248.30:7013/include1/cx_sgfplxcx.jsp"
+  captchaUrl: "https://59.173.248.30:7013/include1/kaptcha.jsp"

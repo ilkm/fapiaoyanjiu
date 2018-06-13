@@ -13,6 +13,25 @@ public class GsjSession {
 	private String gsjSessionId;
 	
 	private long createTime;
+	
+	private String faPiaoDaiMa;
+	private String faPiaoHaoMa;
+
+	public String getFaPiaoDaiMa() {
+		return faPiaoDaiMa;
+	}
+
+	public void setFaPiaoDaiMa(String faPiaoDaiMa) {
+		this.faPiaoDaiMa = faPiaoDaiMa;
+	}
+
+	public String getFaPiaoHaoMa() {
+		return faPiaoHaoMa;
+	}
+
+	public void setFaPiaoHaoMa(String faPiaoHaoMa) {
+		this.faPiaoHaoMa = faPiaoHaoMa;
+	}
 
 	public String getGsjSessionId() {
 		return gsjSessionId;

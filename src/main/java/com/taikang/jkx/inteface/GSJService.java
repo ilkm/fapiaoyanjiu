@@ -11,6 +11,8 @@ import org.apache.http.client.ClientProtocolException;
  */
 public interface GSJService {
 	
-	public String getSessionIDFromGsj(String userId) throws ClientProtocolException, IOException;
+	public String getSessionIDFromGsj() throws ClientProtocolException, IOException;
+	
+	public void getCaptchaBySessionID(String sessionID) throws ClientProtocolException, IOException;
 
 }

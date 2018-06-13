@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Implementation-Title: weixingongzhonghao
 Implementation-Version: 0.0.1-SNAPSHOT
-Built-By: zhangqh27
+Built-By: Administrator
 Implementation-Vendor-Id: com.taikang.jkx
 Build-Jdk: 1.8.0_144
 Implementation-URL: http://projects.spring.io/spring-boot/weixingongzh
