@@ -17,18 +17,31 @@ public class GsjSessionUtil {
 
 	public static Map<String, GsjSession> gsjSessions = new HashMap<>();
 
-	public GsjSession getSessionByWechatUserId(String userId) {
+	public static GsjSession getSessionByWechatUserId(String userId) {
 		return gsjSessions.get(userId);
 	}
 
-	public void setGsjSession(String userId, GsjSession gsjSession) {
+	public static void setGsjSession(String userId, GsjSession gsjSession) {
 		gsjSessions.put(userId, gsjSession);
+	}
+	
+	/**
+	 * 重新设置过期时间
+	 * @param userId
+	 */
+	public static void freshSessionExpireTime(String userId){
+		
+		GsjSession sessionByWechatUserId = getSessionByWechatUserId(userId);
+		if(sessionByWechatUserId!=null){
+			sessionByWechatUserId.setCreateTime(System.currentTimeMillis());
+		}
+		
 	}
 
 	/**
 	 * 删除过期的国税局session信息
 	 */
-	public void expireGsjSession(long expireTime) {
+	public static void expireGsjSession(long expireTime) {
 		Iterator<Entry<String, GsjSession>> iterator = gsjSessions.entrySet().iterator();
 		while (iterator.hasNext()) {
 			Entry<String, GsjSession> next = iterator.next();
