@@ -3,8 +3,6 @@ package com.taikang.jkx.controller;
 import java.io.IOException;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
-import java.util.List;
-import java.util.Map;
 
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -22,14 +20,13 @@ import org.xml.sax.SAXException;
 
 import com.taikang.jkx.bo.CaptchaBO;
 import com.taikang.jkx.bo.CommonUtil;
-import com.taikang.jkx.bo.GsjSession;
-import com.taikang.jkx.bo.SampleBO;
 import com.taikang.jkx.bo.WeChatCommunicationBO;
 import com.taikang.jkx.inteface.AipOcrClientService;
 import com.taikang.jkx.inteface.GSJService;
 import com.taikang.jkx.inteface.WechatService;
 import com.taikang.jkx.thread.OcrThread;
 import com.taikang.jkx.util.GsjSessionUtil;
+import com.taikang.jkx.util.HttpClientCreator;
 
 @RestController
 public class WXController {
@@ -40,41 +37,46 @@ public class WXController {
 	private GSJService gsjService;
 	@Autowired
 	private WechatService wechatService;
+	@Autowired
+	private HttpClientCreator clientCreator;
 
 	@PostMapping("/wx")
 	public String hello(HttpServletRequest request, String signature, String timestamp, int nonce, String echostr)
 			throws IOException, JDOMException, ParserConfigurationException, SAXException {
-
+		long start = System.currentTimeMillis();
+		System.out.println(start);
 		String result = "";
 		// 解析消息内容
 		WeChatCommunicationBO messageFromXML = getMessageFromXML(request);
 
 		// 根据消息内容调用逻辑
-		// 如果发送的是文字信息直接返回接收到的文字信息
+		//如果是文字信息
 		if (CommonUtil.MessageTypeText.equals(messageFromXML.getMsgType())) {
 			if(messageFromXML.getContent().length()==4){
-				
+				String yanjiuMessage = gsjService.check(GsjSessionUtil.getSessionByWechatUserId(messageFromXML.getFromUserName()),messageFromXML.getContent());
+				result = generateResponse(messageFromXML, CommonUtil.MessageTypeText, yanjiuMessage);
 			}else{
 				result = generateResponse(messageFromXML, CommonUtil.MessageTypeText, messageFromXML.getContent());
 			}
 		}
 		// 如果发送的是图片信息给用户返回一个验证码,并异步调用文字识别接口进行文字识别，
 		if (CommonUtil.MessageTypeImage.equals(messageFromXML.getMsgType())) {
-			
+			//先想国税局网站请求sessionID信息
 			String sessionIDFromGsj = gsjService.getSessionIDFromGsj(messageFromXML.getFromUserName());
-			
 			//拿着国税局网站的sessionID去请求验证码图片
 			CaptchaBO captchaBySessionID = gsjService.getCaptchaBySessionID(sessionIDFromGsj);
 			//将从国税局拿到的验证码作为临时图片素材上传到微信公众平台
 			String mediaId = wechatService.uploadTempMedia(captchaBySessionID);
 			result = generateResponse(messageFromXML, CommonUtil.MessageTypeImage, mediaId);
 			//将发票信息上传到百度云进行文字识别
-			Thread td = new Thread(new OcrThread(messageFromXML,aipOcrClient));
+			Thread td = new Thread(new OcrThread(messageFromXML,aipOcrClient,clientCreator.getHttpClient()));
 			td.start();
 		}
 
-		// 生成响应信息
-
+		System.out.println("返回消息给"+messageFromXML.getFromUserName());
+		System.out.println(result);
+		long endTime = System.currentTimeMillis();
+		System.out.println("用时:"+(endTime-start)/1000+"秒");
 		return result;
 	}
 
@@ -100,7 +102,7 @@ public class WXController {
 		}
 		// 如果回复的消息是图片
 		if (CommonUtil.MessageTypeImage.equals(msgType)) {
-			sb.append("<MediaId><![CDATA[").append(content).append("]]></MediaId>");
+			sb.append("<Image><MediaId><![CDATA[").append(content).append("]]></MediaId></Image>");
 		}
 
 		sb.append("</xml>");
@@ -160,6 +162,7 @@ public class WXController {
 			String content = documentElement.getElementsByTagName(CommonUtil.Content).item(0).getFirstChild()
 					.getNodeValue();
 			System.out.println("消息内容为:" + content);
+			result.setContent(content);
 		}
 		// 如果请求消息类型是图片类型
 		if (CommonUtil.MessageTypeImage.equals(msgType)) {

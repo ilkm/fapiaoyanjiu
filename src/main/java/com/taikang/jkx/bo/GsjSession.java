@@ -16,6 +16,16 @@ public class GsjSession {
 	
 	private String faPiaoDaiMa;
 	private String faPiaoHaoMa;
+	
+	private String md5v ;
+	
+	public String getMd5v() {
+		return md5v;
+	}
+
+	public void setMd5v(String md5v) {
+		this.md5v = md5v;
+	}
 
 	public String getFaPiaoDaiMa() {
 		return faPiaoDaiMa;

@@ -75,7 +75,6 @@ public class AccessTokenManager {
 		
 		prop.store(new FileWriter(accessTokenFile), "");
 		
-
 		return prop.getProperty("accessToken");
 	}
 

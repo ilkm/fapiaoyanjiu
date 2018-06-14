@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class HttpClientCreator {
 	
-	@Value("${abc}")
+	@Value("${proxy.enable}")
 	private boolean proxyEnable;
 	@Value("${proxy.host}")
 	private String proxyHost;
@@ -27,8 +27,7 @@ public class HttpClientCreator {
 	private String username;
 	@Value("${proxy.password}")
 	private String password;
-	
-
+	private HttpClientBuilder create;
 	/**
 	 * 创建httpClient客户端
 	 * 
@@ -36,7 +35,10 @@ public class HttpClientCreator {
 	 */
 	public CloseableHttpClient getHttpClient() {
 		// 创建客户端
-		HttpClientBuilder create = HttpClientBuilder.create();
+		if(create!=null){
+			return create.build();
+		}
+		create = HttpClientBuilder.create();
 		if(proxyEnable){
 			// 设置代理服务器信息
 			HttpHost proxy = new HttpHost(proxyHost, proxyPort);
@@ -54,7 +56,6 @@ public class HttpClientCreator {
 			}
 		});
 		// 获取客户端
-		CloseableHttpClient client = create.build();
-		return client;
+		return create.build();
 	}
 }

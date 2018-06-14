@@ -2,15 +2,25 @@ package com.taikang.jkx.inteface.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
-
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.StatusLine;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -32,27 +42,30 @@ public class GSJServiceImpl implements GSJService {
 
 	@Autowired
 	private HttpClientCreator httpClinetCreator;
-	
+
 	@Value("${gsj.gsjUrl}")
 	private String gsjUrl;
 	@Value("${gsj.captchaUrl}")
 	private String captchaUrl;
+	@Value("${gsj.md5Url}")
+	private String md5Url;
+	@Value("${gsj.yanjiuUrl}")
+	private String yanjiuUrl;
+
 	@Value("${gsj.sessionIdExpireTime}")
 	private long gsjSessionExpireTime;
 
 	@Override
 	public String getSessionIDFromGsj(String userId) throws ClientProtocolException, IOException {
 
-		//先判断本地系统中存储的sessionID是否已过期，如果过期了就移除。
+		// 先判断本地系统中存储的sessionID是否已过期，如果过期了就移除。
 		GsjSessionUtil.expireGsjSesionByUserId(userId, gsjSessionExpireTime);
 		// 先从数据库中查看当前微信用户是否已存在sessionID。,如果没有,请求网站获取一个.
-		GsjSession sessionByWechatUserId = GsjSessionUtil
-				.getSessionByWechatUserId(userId);
-		if(sessionByWechatUserId!=null){
+		GsjSession sessionByWechatUserId = GsjSessionUtil.getSessionByWechatUserId(userId);
+		if (sessionByWechatUserId != null) {
 			return sessionByWechatUserId.getGsjSessionId();
 		}
 		String JSESSIONID = "";
-		GsjSessionUtil.getSessionByWechatUserId(userId);
 		// 获取客户端
 		CloseableHttpClient client = httpClinetCreator.getHttpClient();
 
@@ -76,24 +89,21 @@ public class GSJServiceImpl implements GSJService {
 				}
 			}
 		}
-		
+
 		GsjSession jSession = new GsjSession();
 		jSession.setCreateTime(System.currentTimeMillis());
 		jSession.setGsjSessionId(JSESSIONID);
+		System.out.println("请求了一次sessionID,sessionID为:"+JSESSIONID);
 		GsjSessionUtil.setGsjSession(userId, jSession);
-		client.close();
-		
 		return JSESSIONID;
 	}
-
-	
 
 	@Override
 	public CaptchaBO getCaptchaBySessionID(String sessionID) throws ClientProtocolException, IOException {
 		CloseableHttpClient httpClient = httpClinetCreator.getHttpClient();
 		// 创建get请求地址
 		HttpGet get = new HttpGet(captchaUrl);
-		get.setHeader("Cookie", "JSESSIONID="+sessionID);
+		get.setHeader("Cookie", "JSESSIONID=" + sessionID);
 		HttpResponse execute = httpClient.execute(get);
 		StatusLine statusLine = execute.getStatusLine();
 		System.out.println(statusLine);
@@ -101,13 +111,127 @@ public class GSJServiceImpl implements GSJService {
 		InputStream content = entity.getContent();
 		String contentType = entity.getContentType().getValue();
 		long contentLength = entity.getContentLength();
-		
+
 		CaptchaBO captcha = new CaptchaBO();
 		captcha.setInputStream(content);
 		captcha.setContentLength(contentLength);
 		captcha.setContentType(contentType);
-		
 		return captcha;
 	}
 
+	/**
+	 * 获取验旧前的md5校验码
+	 */
+	@Override
+	public String getMd5v(String fpdm, String fphm,String sessionId) throws ClientProtocolException, IOException {
+		CloseableHttpClient httpClient = httpClinetCreator.getHttpClient();
+		String requestUrl = "https://59.173.248.30:7013/include1/fpcxjm.jsp?str1=" + "&str2=" + fpdm + "&str3=" + fphm;
+//		String requestUrl = md5Url + "&str2=" + fpdm + "&str3=" + fphm;
+		HttpGet get = new HttpGet(requestUrl);
+		get.addHeader("Cookie", "JSESSIONID=" + sessionId);
+		CloseableHttpResponse response = httpClient.execute(get);
+		InputStream content = response.getEntity().getContent();
+		char[] response_chars = new char[1024];
+		InputStreamReader reader = new InputStreamReader(content);
+		int read = reader.read(response_chars);
+		String result = new String(response_chars, 0, read);
+		return result;
+	}
+	
+	@Override
+	public String getMd5v(String fpdm, String fphm, String sessionId, CloseableHttpClient httpClient) throws UnsupportedOperationException, IOException {
+		String requestUrl = "https://59.173.248.30:7013/include1/fpcxjm.jsp?str1=" + "&str2=" + fpdm + "&str3=" + fphm;
+//		String requestUrl = md5Url + "&str2=" + fpdm + "&str3=" + fphm;
+		HttpGet get = new HttpGet(requestUrl);
+		get.addHeader("Cookie", "JSESSIONID=" + sessionId);
+		CloseableHttpResponse response = httpClient.execute(get);
+		InputStream content = response.getEntity().getContent();
+		char[] response_chars = new char[1024];
+		InputStreamReader reader = new InputStreamReader(content);
+		int read = reader.read(response_chars);
+		String result = new String(response_chars, 0, read);
+		return result;
+	}
+
+	/**
+	 * 向国税局网站提交请求信息
+	 * @param sessionByWechatUserId
+	 * @param content
+	 * @return
+	 * @throws ClientProtocolException
+	 * @throws IOException
+	 */
+	@Override
+	public String check(GsjSession sessionByWechatUserId, String content) throws ClientProtocolException, IOException {
+		
+//		String md5v2 = getMd5v(sessionByWechatUserId.getFaPiaoDaiMa(), sessionByWechatUserId.getFaPiaoHaoMa(), sessionByWechatUserId.getGsjSessionId());
+
+		//通过jsoup直接请求URL
+//		Document doc = Jsoup.connect(yanjiuUrl)
+//		.data("cxbz", "lscx")
+//		.data("fpdm", sessionByWechatUserId.getFaPiaoDaiMa())
+//		.data("fphm", sessionByWechatUserId.getFaPiaoHaoMa())
+//		.data("je", "10")
+//		.data("kaptchafield", content)
+//		.data("kjfsbh", "")
+//		.data("md5v", md5v2)
+//		.data("rq", "20180506")
+//		.data("ywlx", "FPCX_LXCX")
+//		.data("ywlxbf", "FPCX_LXCX")
+//		.cookie("Cookie", "JSESSIONID=" + sessionByWechatUserId.getGsjSessionId())
+//		.post();
+//		Element result = doc.selectFirst("td[class=red_12]");
+		
+		//通过httpClient请求
+		CloseableHttpClient httpClient = httpClinetCreator.getHttpClient();
+		HttpPost post = new HttpPost(yanjiuUrl);
+		List<NameValuePair> parameters = new ArrayList<>();
+		NameValuePair cxbz = new BasicNameValuePair("cxbz", "lscx");
+		NameValuePair fpdm = new BasicNameValuePair("fpdm", sessionByWechatUserId.getFaPiaoDaiMa());
+		System.out.println("fpdm:"+ sessionByWechatUserId.getFaPiaoDaiMa());
+		NameValuePair fphm = new BasicNameValuePair("fphm", sessionByWechatUserId.getFaPiaoHaoMa());
+		System.out.println("fphm:"+ sessionByWechatUserId.getFaPiaoHaoMa());
+		NameValuePair je = new BasicNameValuePair("je", "10");
+		NameValuePair kaptchafield = new BasicNameValuePair("kaptchafield", content);
+		NameValuePair kjfsbh = new BasicNameValuePair("kjfsbh", "");
+		NameValuePair md5v = new BasicNameValuePair("md5v", sessionByWechatUserId.getMd5v());
+		NameValuePair rq = new BasicNameValuePair("rq", "20180506");
+		NameValuePair ywlx = new BasicNameValuePair("ywlx", "FPCX_LXCX");
+		NameValuePair ywlxbf = new BasicNameValuePair("ywlxbf", "FPCX_LXCX");
+
+		parameters.add(cxbz);
+		parameters.add(fpdm);
+		parameters.add(fphm);
+		parameters.add(je);
+		parameters.add(kaptchafield);
+		parameters.add(kjfsbh);
+		parameters.add(md5v);
+		parameters.add(rq);
+		parameters.add(ywlx);
+		parameters.add(ywlxbf);
+		
+		HttpEntity requestEntity = new UrlEncodedFormEntity(parameters);
+		post.setEntity(requestEntity);
+		
+		post.addHeader("Cookie", "JSESSIONID=" + sessionByWechatUserId.getGsjSessionId());
+		System.out.println("请求使用的sessionID为:"+sessionByWechatUserId.getGsjSessionId());
+		post.addHeader("Referer	", "https://59.173.248.30:7013/include1/cx_sgfplxcx.jsp");
+		CloseableHttpResponse response = httpClient.execute(post);
+		HttpEntity responseEntity = response.getEntity();
+		InputStream content2 = responseEntity.getContent();
+		System.out.println(responseEntity.getContentLength());
+		StringBuffer sb = new StringBuffer();
+		char[] charTemp = new char[1024];
+		int readLenth = 0;
+		InputStreamReader reader = new InputStreamReader(content2);
+		while((readLenth = reader.read(charTemp))>0){
+			sb.append(charTemp, 0, readLenth);
+		}
+		Document parse = Jsoup.parse(sb.toString());
+		Element result = parse.selectFirst("td[class=red_12]");
+		if(result==null){
+			result = parse.selectFirst("script");
+		}
+		return result.text();
+	}
 }

@@ -1,7 +1,7 @@
-server.port: 8082
-abc: true
+server.port: 80
+abc: false
 proxy:
-    enable: true
+    enable: false
     host: 10.11.2.40
     port: 3088
     username: zhangqh27
@@ -9,6 +9,8 @@ proxy:
 gsj:
     gsjUrl: "https://59.173.248.30:7013/include1/cx_sgfplxcx.jsp"
     captchaUrl: "https://59.173.248.30:7013/include1/kaptcha.jsp"
+    md5Url: "https://59.173.248.30:7013/include1/fpcxjm.jsp?str1="
+    yanjiuUrl: "https://59.173.248.30:7013/include1/cx_sgfplxcx_jg.jsp"
     sessionIdExpireTime: 1800000
 wechat:
     # 临时图片上传地址

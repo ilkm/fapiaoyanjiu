@@ -49,7 +49,7 @@ public class WechatServiceImpl implements WechatService {
 		HttpPost httpPost = new HttpPost(replace);
 		
 		
-		String randomFileName = UUID.randomUUID().toString().replace("-", "")+"jpg";
+		String randomFileName = UUID.randomUUID().toString().replace("-", "")+".jpg";
 		StringBody fileName = new StringBody(randomFileName, ContentType.TEXT_PLAIN );
 		StringBody fileLength = new StringBody(""+captchaBo.getContentLength(), ContentType.TEXT_PLAIN);
 		StringBody contentType = new StringBody(captchaBo.getContentType(), ContentType.TEXT_PLAIN);
@@ -84,9 +84,10 @@ public class WechatServiceImpl implements WechatService {
 		String str = new String(temp,0,read);
 		
 		JSONObject json = JSONObject.parseObject(str);
+		System.out.println(json.toJSONString());
 		//{"type":"TYPE","media_id":"MEDIA_ID","created_at":123456789}
 		String mediaId = json.getString("media_id");
-		
+		System.out.println(mediaId);
 		return mediaId;
 	}
 
