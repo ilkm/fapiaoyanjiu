@@ -51,4 +51,16 @@ public class GsjSessionUtil {
 			}
 		}
 	}
+	
+	/**
+	 * 删除指定人员的session信息
+	 * @param userId
+	 * @param expireTime
+	 */
+	public static void expireGsjSesionByUserId(String userId,long expireTime){
+		GsjSession gsjSession = gsjSessions.get(userId);
+		if(gsjSession!=null&&System.currentTimeMillis() - gsjSession.getCreateTime() > expireTime){
+			gsjSessions.remove(userId);
+		}
+	}
 }

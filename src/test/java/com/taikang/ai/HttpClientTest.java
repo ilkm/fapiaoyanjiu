@@ -137,6 +137,13 @@ public class HttpClientTest {
 	private CloseableHttpClient getHttpClient() {
 		// 创建客户端
 		HttpClientBuilder create = HttpClientBuilder.create();
+		// 设置代理服务器信息
+		HttpHost proxy = new HttpHost("10.11.2.40", 3088);
+		create.setProxy(proxy);
+		CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+		Credentials credentials = new UsernamePasswordCredentials("zhangqh27", "El250816");
+		credentialsProvider.setCredentials(AuthScope.ANY, credentials);
+		create.setDefaultCredentialsProvider(credentialsProvider);
 		// 设置域名验证逻辑
 		create.setSSLHostnameVerifier(new HostnameVerifier() {
 			@Override

@@ -1,11 +1,1 @@
 server.port: 80
-
-proxy:
-  enable: true
-  host: 10.11.2.40
-  port: 3088
-  username: zhangqh27
-  password: El250816
-gsj:
-  gsjUrl: "https://59.173.248.30:7013/include1/cx_sgfplxcx.jsp"
-  captchaUrl: "https://59.173.248.30:7013/include1/kaptcha.jsp"

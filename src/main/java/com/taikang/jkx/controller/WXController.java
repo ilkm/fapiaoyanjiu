@@ -1,6 +1,7 @@
 package com.taikang.jkx.controller;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -20,12 +21,14 @@ import org.springframework.web.bind.annotation.RestController;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import com.taikang.jkx.bo.CaptchaBO;
 import com.taikang.jkx.bo.CommonUtil;
 import com.taikang.jkx.bo.GsjSession;
 import com.taikang.jkx.bo.SampleBO;
 import com.taikang.jkx.bo.WeChatCommunicationBO;
 import com.taikang.jkx.inteface.AipOcrClientService;
 import com.taikang.jkx.inteface.GSJService;
+import com.taikang.jkx.inteface.WechatService;
 import com.taikang.jkx.util.GsjSessionUtil;
 
 @RestController
@@ -35,6 +38,8 @@ public class WXController {
 	private AipOcrClientService aipOcrClient;
 	@Autowired
 	private GSJService gsjService;
+	@Autowired
+	private WechatService wechatService;
 
 	@PostMapping("/wx")
 	public String hello(HttpServletRequest request, String signature, String timestamp, int nonce, String echostr)
@@ -49,20 +54,15 @@ public class WXController {
 		if (CommonUtil.MessageTypeText.equals(messageFromXML.getMsgType())) {
 			result = generateResponse(messageFromXML, CommonUtil.MessageTypeText, messageFromXML.getContent());
 		}
-		// 如果发送的是图片信息,调用文字识别接口进行文字识别
+		// 如果发送的是图片信息给用户返回一个验证码,并异步调用文字识别接口进行文字识别，
 		if (CommonUtil.MessageTypeImage.equals(messageFromXML.getMsgType())) {
-			//先获取网站国税局网站的SessionID,如果没有,请求网站获取一个.
-			GsjSession sessionByWechatUserId = GsjSessionUtil
-					.getSessionByWechatUserId(messageFromXML.getFromUserName());
-			if (sessionByWechatUserId == null) {
-				String sessionIDFromGsj = gsjService.getSessionIDFromGsj();
-				GsjSession jSession = new GsjSession();
-				jSession.setCreateTime(System.currentTimeMillis());
-				jSession.setGsjSessionId(sessionIDFromGsj);
-				GsjSessionUtil.setGsjSession(messageFromXML.getFromUserName(), jSession);
-			}
+			
+			String sessionIDFromGsj = gsjService.getSessionIDFromGsj(messageFromXML.getFromUserName());
 			
 			//拿着国税局网站的sessionID去请求验证码图片
+			CaptchaBO captchaBySessionID = gsjService.getCaptchaBySessionID(sessionIDFromGsj);
+			//将从国税局拿到的验证码作为临时图片素材上传到微信公众平台
+			String mediaId = wechatService.uploadTempMedia(captchaBySessionID);
 			
 
 			SampleBO basicGeneralUrl = aipOcrClient.basicGeneralUrl(messageFromXML.getPicUrl());
@@ -72,7 +72,6 @@ public class WXController {
 				.getSessionByWechatUserId(messageFromXML.getFromUserName());
 				jSession2.setFaPiaoDaiMa(words_result.get(0).get("words"));
 				jSession2.setFaPiaoHaoMa(words_result.get(1).get("words"));
-				
 			}
 			StringBuffer words = new StringBuffer();
 			
@@ -83,8 +82,7 @@ public class WXController {
 				System.out.println(string);
 			}
 
-			result = generateResponse(messageFromXML, CommonUtil.MessageTypeImage, "MediaID的内容");
-
+			result = generateResponse(messageFromXML, CommonUtil.MessageTypeImage, mediaId);
 		}
 
 		// 生成响应信息
