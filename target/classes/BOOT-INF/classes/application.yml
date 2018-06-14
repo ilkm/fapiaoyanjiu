@@ -1,1 +1,18 @@
-server.port: 80
+server.port: 8082
+abc: true
+proxy:
+    enable: true
+    host: 10.11.2.40
+    port: 3088
+    username: zhangqh27
+    password: El250816
+gsj:
+    gsjUrl: "https://59.173.248.30:7013/include1/cx_sgfplxcx.jsp"
+    captchaUrl: "https://59.173.248.30:7013/include1/kaptcha.jsp"
+    sessionIdExpireTime: 1800000
+wechat:
+    # 临时图片上传地址
+    uploadMediaUrl: "https://api.weixin.qq.com/cgi-bin/media/upload?access_token=ACCESS_TOKEN_aaa&type=image"
+    # accessToken存活时间
+    accessTokenExpireTime: 7100000
+    accessTokenUrl: "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=wx6eec5c62dca5928b&secret=701f197da29f79a0e6b04289523e8edc"

@@ -1,5 +1,7 @@
 package com.taikang.jkx.util;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,9 +39,10 @@ public class AccessTokenManager {
 	 */
 	public String getAccessToken() throws IOException {
 
-		InputStream resourceAsStream = ClassLoader.getSystemClassLoader().getResourceAsStream("accessToken.properties");
+		File accessTokenFile = new File("accessToken.properties");
 		Properties prop = new Properties();
-		if (resourceAsStream != null) {
+		if (accessTokenFile.exists()) {
+			InputStream resourceAsStream = new FileInputStream(accessTokenFile);
 			prop.load(resourceAsStream);
 			String accessToken = prop.getProperty("accessToken");
 			String createTime = prop.getProperty("createTime");
@@ -47,9 +50,8 @@ public class AccessTokenManager {
 			if (System.currentTimeMillis() - Long.valueOf(createTime) < accessTokenExpireTime) {
 				return accessToken;
 			}
-		} else {
-			prop.store(new FileWriter("accessToken.properties"), "");
-		}
+		} 
+		
 
 		//从微信公众平台获取accessToken
 		CloseableHttpClient httpClient = httpClientCreator.getHttpClient();
@@ -68,8 +70,11 @@ public class AccessTokenManager {
 		if(json!=null){
 			String accessToken = json.getString("access_token");
 			prop.put("accessToken", accessToken);
-			prop.put("createTime", System.currentTimeMillis());
+			prop.put("createTime", ""+System.currentTimeMillis());
 		}
+		
+		prop.store(new FileWriter(accessTokenFile), "");
+		
 
 		return prop.getProperty("accessToken");
 	}

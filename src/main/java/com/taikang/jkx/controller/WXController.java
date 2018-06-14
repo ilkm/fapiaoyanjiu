@@ -1,7 +1,6 @@
 package com.taikang.jkx.controller;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -29,6 +28,7 @@ import com.taikang.jkx.bo.WeChatCommunicationBO;
 import com.taikang.jkx.inteface.AipOcrClientService;
 import com.taikang.jkx.inteface.GSJService;
 import com.taikang.jkx.inteface.WechatService;
+import com.taikang.jkx.thread.OcrThread;
 import com.taikang.jkx.util.GsjSessionUtil;
 
 @RestController
@@ -52,7 +52,11 @@ public class WXController {
 		// 根据消息内容调用逻辑
 		// 如果发送的是文字信息直接返回接收到的文字信息
 		if (CommonUtil.MessageTypeText.equals(messageFromXML.getMsgType())) {
-			result = generateResponse(messageFromXML, CommonUtil.MessageTypeText, messageFromXML.getContent());
+			if(messageFromXML.getContent().length()==4){
+				
+			}else{
+				result = generateResponse(messageFromXML, CommonUtil.MessageTypeText, messageFromXML.getContent());
+			}
 		}
 		// 如果发送的是图片信息给用户返回一个验证码,并异步调用文字识别接口进行文字识别，
 		if (CommonUtil.MessageTypeImage.equals(messageFromXML.getMsgType())) {
@@ -63,26 +67,10 @@ public class WXController {
 			CaptchaBO captchaBySessionID = gsjService.getCaptchaBySessionID(sessionIDFromGsj);
 			//将从国税局拿到的验证码作为临时图片素材上传到微信公众平台
 			String mediaId = wechatService.uploadTempMedia(captchaBySessionID);
-			
-
-			SampleBO basicGeneralUrl = aipOcrClient.basicGeneralUrl(messageFromXML.getPicUrl());
-			List<Map<String, String>> words_result = basicGeneralUrl.getWords_result();
-			if(words_result!=null&&words_result.size()>1){
-				GsjSession jSession2 = GsjSessionUtil
-				.getSessionByWechatUserId(messageFromXML.getFromUserName());
-				jSession2.setFaPiaoDaiMa(words_result.get(0).get("words"));
-				jSession2.setFaPiaoHaoMa(words_result.get(1).get("words"));
-			}
-			StringBuffer words = new StringBuffer();
-			
-			for (Map<String, String> map : words_result) {
-				String string = map.get("words");
-				words.append(string);
-				words.append("\n");
-				System.out.println(string);
-			}
-
 			result = generateResponse(messageFromXML, CommonUtil.MessageTypeImage, mediaId);
+			//将发票信息上传到百度云进行文字识别
+			Thread td = new Thread(new OcrThread(messageFromXML,aipOcrClient));
+			td.start();
 		}
 
 		// 生成响应信息
