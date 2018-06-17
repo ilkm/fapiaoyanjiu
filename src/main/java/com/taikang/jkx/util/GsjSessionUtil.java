@@ -14,6 +14,8 @@ import com.taikang.jkx.bo.GsjSession;
  *
  */
 public class GsjSessionUtil {
+	
+	public static String COMMON_USER_ID = "commonUser";
 
 	public static Map<String, GsjSession> gsjSessions = new HashMap<>();
 

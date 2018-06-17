@@ -33,4 +33,17 @@ public class AipOcrClientServiceImpl implements AipOcrClientService {
 		return parseObject;
 	}
 
+	@Override
+	public SampleBO basicGeneral(String filename) {
+		// 初始化一个OcrClient
+		AipOcr client = new AipOcr(APP_ID, API_KEY, SECRET_KEY);
+		// 可选：设置网络连接参数
+		client.setConnectionTimeoutInMillis(2000);
+		client.setSocketTimeoutInMillis(60000);
+		
+		JSONObject genRes = client.basicGeneral(filename, new HashMap<String,String>());
+		SampleBO parseObject = com.alibaba.fastjson.JSONObject.parseObject(genRes.toString(), SampleBO.class);
+		return parseObject;
+	}
+
 }

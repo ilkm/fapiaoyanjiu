@@ -12,4 +12,6 @@ public class CommonUtil {
 	public static final String PicUrl = "PicUrl";
 	public static final String MessageTypeText = "text";
 	public static final String MessageTypeImage = "image";
+	
+	public static final String REQUEST_MESSAGE_JG = "jg";
 }

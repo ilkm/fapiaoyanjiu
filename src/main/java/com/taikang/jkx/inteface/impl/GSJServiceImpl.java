@@ -56,14 +56,14 @@ public class GSJServiceImpl implements GSJService {
 	private long gsjSessionExpireTime;
 
 	@Override
-	public String getSessionIDFromGsj(String userId) throws ClientProtocolException, IOException {
+	public GsjSession getSessionIDFromGsj(String userId) throws ClientProtocolException, IOException {
 
 		// 先判断本地系统中存储的sessionID是否已过期，如果过期了就移除。
 		GsjSessionUtil.expireGsjSesionByUserId(userId, gsjSessionExpireTime);
 		// 先从数据库中查看当前微信用户是否已存在sessionID。,如果没有,请求网站获取一个.
 		GsjSession sessionByWechatUserId = GsjSessionUtil.getSessionByWechatUserId(userId);
 		if (sessionByWechatUserId != null) {
-			return sessionByWechatUserId.getGsjSessionId();
+			return sessionByWechatUserId;
 		}
 		String JSESSIONID = "";
 		// 获取客户端
@@ -95,7 +95,7 @@ public class GSJServiceImpl implements GSJService {
 		jSession.setGsjSessionId(JSESSIONID);
 		System.out.println("请求了一次sessionID,sessionID为:"+JSESSIONID);
 		GsjSessionUtil.setGsjSession(userId, jSession);
-		return JSESSIONID;
+		return jSession;
 	}
 
 	@Override
@@ -126,7 +126,6 @@ public class GSJServiceImpl implements GSJService {
 	public String getMd5v(String fpdm, String fphm,String sessionId) throws ClientProtocolException, IOException {
 		CloseableHttpClient httpClient = httpClinetCreator.getHttpClient();
 		String requestUrl = "https://59.173.248.30:7013/include1/fpcxjm.jsp?str1=" + "&str2=" + fpdm + "&str3=" + fphm;
-//		String requestUrl = md5Url + "&str2=" + fpdm + "&str3=" + fphm;
 		HttpGet get = new HttpGet(requestUrl);
 		get.addHeader("Cookie", "JSESSIONID=" + sessionId);
 		CloseableHttpResponse response = httpClient.execute(get);
@@ -138,21 +137,6 @@ public class GSJServiceImpl implements GSJService {
 		return result;
 	}
 	
-	@Override
-	public String getMd5v(String fpdm, String fphm, String sessionId, CloseableHttpClient httpClient) throws UnsupportedOperationException, IOException {
-		String requestUrl = "https://59.173.248.30:7013/include1/fpcxjm.jsp?str1=" + "&str2=" + fpdm + "&str3=" + fphm;
-//		String requestUrl = md5Url + "&str2=" + fpdm + "&str3=" + fphm;
-		HttpGet get = new HttpGet(requestUrl);
-		get.addHeader("Cookie", "JSESSIONID=" + sessionId);
-		CloseableHttpResponse response = httpClient.execute(get);
-		InputStream content = response.getEntity().getContent();
-		char[] response_chars = new char[1024];
-		InputStreamReader reader = new InputStreamReader(content);
-		int read = reader.read(response_chars);
-		String result = new String(response_chars, 0, read);
-		return result;
-	}
-
 	/**
 	 * 向国税局网站提交请求信息
 	 * @param sessionByWechatUserId
@@ -163,24 +147,6 @@ public class GSJServiceImpl implements GSJService {
 	 */
 	@Override
 	public String check(GsjSession sessionByWechatUserId, String content) throws ClientProtocolException, IOException {
-		
-//		String md5v2 = getMd5v(sessionByWechatUserId.getFaPiaoDaiMa(), sessionByWechatUserId.getFaPiaoHaoMa(), sessionByWechatUserId.getGsjSessionId());
-
-		//通过jsoup直接请求URL
-//		Document doc = Jsoup.connect(yanjiuUrl)
-//		.data("cxbz", "lscx")
-//		.data("fpdm", sessionByWechatUserId.getFaPiaoDaiMa())
-//		.data("fphm", sessionByWechatUserId.getFaPiaoHaoMa())
-//		.data("je", "10")
-//		.data("kaptchafield", content)
-//		.data("kjfsbh", "")
-//		.data("md5v", md5v2)
-//		.data("rq", "20180506")
-//		.data("ywlx", "FPCX_LXCX")
-//		.data("ywlxbf", "FPCX_LXCX")
-//		.cookie("Cookie", "JSESSIONID=" + sessionByWechatUserId.getGsjSessionId())
-//		.post();
-//		Element result = doc.selectFirst("td[class=red_12]");
 		
 		//通过httpClient请求
 		CloseableHttpClient httpClient = httpClinetCreator.getHttpClient();
@@ -212,7 +178,7 @@ public class GSJServiceImpl implements GSJService {
 		
 		HttpEntity requestEntity = new UrlEncodedFormEntity(parameters);
 		post.setEntity(requestEntity);
-		
+		//将包含sessionID的JSESSIONID作为请求头的一部分
 		post.addHeader("Cookie", "JSESSIONID=" + sessionByWechatUserId.getGsjSessionId());
 		System.out.println("请求使用的sessionID为:"+sessionByWechatUserId.getGsjSessionId());
 		post.addHeader("Referer	", "https://59.173.248.30:7013/include1/cx_sgfplxcx.jsp");
@@ -227,6 +193,7 @@ public class GSJServiceImpl implements GSJService {
 		while((readLenth = reader.read(charTemp))>0){
 			sb.append(charTemp, 0, readLenth);
 		}
+		System.out.println(sb.toString());
 		Document parse = Jsoup.parse(sb.toString());
 		Element result = parse.selectFirst("td[class=red_12]");
 		if(result==null){
