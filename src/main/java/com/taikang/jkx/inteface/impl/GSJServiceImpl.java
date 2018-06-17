@@ -155,10 +155,12 @@ public class GSJServiceImpl implements GSJService {
 	 */
 	@Override
 	public String check(GsjSession sessionByWechatUserId, String content,String sessionID) throws ClientProtocolException, IOException {
-		
+		long startTime = System.currentTimeMillis();
 		System.out.println(JSONObject.toJSONString(sessionByWechatUserId));
 		//通过httpClient请求
 		CloseableHttpClient httpClient = httpClinetCreator.getHttpClient();
+		long httpClientGetTime = System.currentTimeMillis();
+		log.info("获取连接的时间是{}秒",(httpClientGetTime-startTime)/1000);
 		HttpPost post = new HttpPost(yanjiuUrl);
 		List<NameValuePair> parameters = new ArrayList<>();
 		NameValuePair cxbz = new BasicNameValuePair("cxbz", "lscx");
@@ -192,6 +194,8 @@ public class GSJServiceImpl implements GSJService {
 		log.debug("请求使用的sessionID为:{}",sessionID);
 		post.addHeader("Referer	", "https://59.173.248.30:7013/include1/cx_sgfplxcx.jsp");
 		CloseableHttpResponse response = httpClient.execute(post);
+		long executeEndTime = System.currentTimeMillis();
+		log.info("请求完成后的时间为:{}秒",(executeEndTime-startTime)/1000);
 		HttpEntity responseEntity = response.getEntity();
 		InputStream content2 = responseEntity.getContent();
 //		log.debug(responseEntity.getContentLength()+"");
@@ -202,7 +206,11 @@ public class GSJServiceImpl implements GSJService {
 		while((readLenth = reader.read(charTemp))>0){
 			sb.append(charTemp, 0, readLenth);
 		}
+		long parseBefore = System.currentTimeMillis();
+		log.info("解析结果前的时间为:{}秒",(parseBefore-startTime)/1000);
 		Document parse = Jsoup.parse(sb.toString());
+		long parseEnd = System.currentTimeMillis();
+		log.info("解析完成后的时间为:{}秒",(parseEnd-startTime)/1000);
 		Element result = parse.selectFirst("td[class=red_12]");
 		if(result==null){
 			result = parse.selectFirst("script");
@@ -217,6 +225,8 @@ public class GSJServiceImpl implements GSJService {
 		if(result == null){
 			result = parse.selectFirst("a[href=cx_sgfplxcx.jsp]").selectFirst("font");
 		}
+		long endTime = System.currentTimeMillis();
+		log.info("check方法完成时间为:{}秒",(endTime-startTime)/1000);
 		return result.text();
 	}
 }
