@@ -11,6 +11,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.jdom2.JDOMException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,6 +37,8 @@ public class WXController {
 	private GSJService gsjService;
 	@Autowired
 	private WechatService wechatService;
+	
+	private Logger log = LoggerFactory.getLogger(WXController.class);
 
 	@PostMapping("/wx")
 	public String hello(HttpServletRequest request, String signature, String timestamp, int nonce, String echostr)
@@ -91,11 +95,9 @@ public class WXController {
 //				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, "正在查询,请5秒后回复【"+CommonUtil.REQUEST_MESSAGE_JG+"】查看查询结果...");
 			}
 		}
-
-		System.out.println("返回消息给"+realUserMessage.getFromUserName());
-		System.out.println(result);
+		log.info(result);
 		long endTime = System.currentTimeMillis();
-		System.out.println("用时:"+(endTime-start)/1000+"秒");
+		log.info("用时:{}秒",(endTime-start)/1000);
 		return result;
 	}
 
