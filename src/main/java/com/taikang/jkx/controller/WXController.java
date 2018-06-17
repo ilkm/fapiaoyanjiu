@@ -43,8 +43,6 @@ public class WXController {
 	@PostMapping("/wx")
 	public String hello(HttpServletRequest request, String signature, String timestamp, int nonce, String echostr)
 			throws IOException, JDOMException, ParserConfigurationException, SAXException {
-		long start = System.currentTimeMillis();
-		System.out.println(start);
 		String result = "";
 		// 解析消息内容
 		WeChatCommunicationBO realUserMessage = getMessageFromXML(request);
@@ -96,8 +94,6 @@ public class WXController {
 			}
 		}
 		log.info(result);
-		long endTime = System.currentTimeMillis();
-		log.info("用时:{}秒",(endTime-start)/1000);
 		return result;
 	}
 

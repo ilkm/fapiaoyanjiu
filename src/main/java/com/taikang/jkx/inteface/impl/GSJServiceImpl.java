@@ -44,6 +44,7 @@ import com.taikang.jkx.util.HttpClientCreator;
  */
 @Service
 public class GSJServiceImpl implements GSJService {
+	
 
 	@Autowired
 	private HttpClientCreator httpClinetCreator;
@@ -83,7 +84,7 @@ public class GSJServiceImpl implements GSJService {
 		HttpResponse execute = client.execute(get);
 		// 获取响应状态码
 		StatusLine statusLine = execute.getStatusLine();
-		System.out.println(statusLine);
+		log.debug(statusLine.toString());
 		// 获取session识别码
 		// Set-Cookie:JSESSIONID=o9LyqpSYohchmBTjr9_60L7LVScagBuhVYRkT1XkDr-DsysRyK-w!-1834616633;
 		// path=/; HttpOnly
@@ -102,7 +103,7 @@ public class GSJServiceImpl implements GSJService {
 		GsjSession jSession = new GsjSession();
 		jSession.setCreateTime(System.currentTimeMillis());
 		jSession.setGsjSessionId(JSESSIONID);
-		System.out.println("请求了一次sessionID,sessionID为:"+JSESSIONID);
+		log.debug("请求了一次sessionID,sessionID为:{}",JSESSIONID);
 		GsjSessionUtil.setGsjSession(userId, jSession);
 		return jSession;
 	}
@@ -114,8 +115,6 @@ public class GSJServiceImpl implements GSJService {
 		HttpGet get = new HttpGet(captchaUrl);
 		get.setHeader("Cookie", "JSESSIONID=" + sessionID);
 		HttpResponse execute = httpClient.execute(get);
-		StatusLine statusLine = execute.getStatusLine();
-		System.out.println(statusLine);
 		HttpEntity entity = execute.getEntity();
 		InputStream content = entity.getContent();
 		String contentType = entity.getContentType().getValue();
@@ -164,9 +163,9 @@ public class GSJServiceImpl implements GSJService {
 		List<NameValuePair> parameters = new ArrayList<>();
 		NameValuePair cxbz = new BasicNameValuePair("cxbz", "lscx");
 		NameValuePair fpdm = new BasicNameValuePair("fpdm", sessionByWechatUserId.getFaPiaoDaiMa());
-		System.out.println("fpdm:"+ sessionByWechatUserId.getFaPiaoDaiMa());
+		log.debug("fpdm:{}",sessionByWechatUserId.getFaPiaoDaiMa());
 		NameValuePair fphm = new BasicNameValuePair("fphm", sessionByWechatUserId.getFaPiaoHaoMa());
-		System.out.println("fphm:"+ sessionByWechatUserId.getFaPiaoHaoMa());
+		log.debug("fphm:{}",sessionByWechatUserId.getFaPiaoHaoMa());
 		NameValuePair je = new BasicNameValuePair("je", "10");
 		NameValuePair kaptchafield = new BasicNameValuePair("kaptchafield", content);
 		NameValuePair kjfsbh = new BasicNameValuePair("kjfsbh", "");
@@ -190,12 +189,12 @@ public class GSJServiceImpl implements GSJService {
 		post.setEntity(requestEntity);
 		//将包含sessionID的JSESSIONID作为请求头的一部分
 		post.addHeader("Cookie", "JSESSIONID=" + sessionID);
-		System.out.println("请求使用的sessionID为:"+sessionID);
+		log.debug("请求使用的sessionID为:{}",sessionID);
 		post.addHeader("Referer	", "https://59.173.248.30:7013/include1/cx_sgfplxcx.jsp");
 		CloseableHttpResponse response = httpClient.execute(post);
 		HttpEntity responseEntity = response.getEntity();
 		InputStream content2 = responseEntity.getContent();
-		System.out.println(responseEntity.getContentLength());
+//		log.debug(responseEntity.getContentLength()+"");
 		StringBuffer sb = new StringBuffer();
 		char[] charTemp = new char[1024];
 		int readLenth = 0;
@@ -203,13 +202,12 @@ public class GSJServiceImpl implements GSJService {
 		while((readLenth = reader.read(charTemp))>0){
 			sb.append(charTemp, 0, readLenth);
 		}
-		System.out.println(sb.toString());
 		Document parse = Jsoup.parse(sb.toString());
 		Element result = parse.selectFirst("td[class=red_12]");
 		if(result==null){
 			result = parse.selectFirst("script");
 			if(result!=null){
-				System.out.println("验证结果中包含script脚本");
+				log.debug("验证结果中包含script脚本");
 				List<DataNode> dataNodes = result.dataNodes();
 				DataNode dataNode = dataNodes.get(0);
 				String wholeData = dataNode.getWholeData();

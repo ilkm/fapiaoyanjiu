@@ -16,6 +16,8 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,8 @@ import com.taikang.jkx.util.HttpClientCreator;
  */
 @Service
 public class WechatServiceImpl implements WechatService {
+	
+	private Logger log = LoggerFactory.getLogger(this.getClass());
 	
 	@Value("${wechat.uploadMediaUrl}")
 	private String uploadUrl;
@@ -87,7 +91,7 @@ public class WechatServiceImpl implements WechatService {
 		System.out.println(json.toJSONString());
 		//{"type":"TYPE","media_id":"MEDIA_ID","created_at":123456789}
 		String mediaId = json.getString("media_id");
-		System.out.println(mediaId);
+		log.debug(mediaId);
 		return mediaId;
 	}
 
