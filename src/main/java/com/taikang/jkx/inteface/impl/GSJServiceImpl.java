@@ -155,7 +155,7 @@ public class GSJServiceImpl implements GSJService {
 	 * @throws IOException
 	 */
 	@Override
-	public String check(GsjSession sessionByWechatUserId, String content) throws ClientProtocolException, IOException {
+	public String check(GsjSession sessionByWechatUserId, String content,String sessionID) throws ClientProtocolException, IOException {
 		
 		System.out.println(JSONObject.toJSONString(sessionByWechatUserId));
 		//通过httpClient请求
@@ -189,8 +189,8 @@ public class GSJServiceImpl implements GSJService {
 		HttpEntity requestEntity = new UrlEncodedFormEntity(parameters);
 		post.setEntity(requestEntity);
 		//将包含sessionID的JSESSIONID作为请求头的一部分
-		post.addHeader("Cookie", "JSESSIONID=" + sessionByWechatUserId.getGsjSessionId());
-		System.out.println("请求使用的sessionID为:"+sessionByWechatUserId.getGsjSessionId());
+		post.addHeader("Cookie", "JSESSIONID=" + sessionID);
+		System.out.println("请求使用的sessionID为:"+sessionID);
 		post.addHeader("Referer	", "https://59.173.248.30:7013/include1/cx_sgfplxcx.jsp");
 		CloseableHttpResponse response = httpClient.execute(post);
 		HttpEntity responseEntity = response.getEntity();

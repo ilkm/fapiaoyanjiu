@@ -21,6 +21,6 @@ public interface GSJService {
 	
 	public String getMd5v(String fpdm,String fphm,String sessionId) throws ClientProtocolException, IOException;
 
-	public String check(GsjSession sessionByWechatUserId, String content) throws UnsupportedEncodingException, ClientProtocolException, IOException;
+	public String check(GsjSession sessionByWechatUserId, String content,String sessionId) throws UnsupportedEncodingException, ClientProtocolException, IOException;
 
 }

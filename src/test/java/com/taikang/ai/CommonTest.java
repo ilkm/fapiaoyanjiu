@@ -68,4 +68,17 @@ public class CommonTest {
 			System.out.println(group);
 		}
 	}
+	@Test
+	public void fun8(){
+		String word = "烈04197881";
+		//烈04197881
+		String fphmRegex = ".*[^0-9]*[0-9]{8}[^0-9]*.*";
+		String fphmSubRegex = "[0-9]{8}";
+		Pattern compile = Pattern.compile(fphmSubRegex);
+		Matcher matcher = compile.matcher(word);
+		if(matcher.find()){
+			String fphm = matcher.group();
+			System.out.println(fphm);
+		}
+	}
 }

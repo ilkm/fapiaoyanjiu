@@ -54,7 +54,7 @@ public class OcrThread implements Runnable {
 	
 	@Override
 	public void run() {
-		
+		GsjSession realSession = GsjSessionUtil.getSessionByWechatUserId(userId);
 		String picUrl = messageFromXML.getPicUrl();
 		HttpGet request = new HttpGet(picUrl);
 		String picName;
@@ -105,21 +105,21 @@ public class OcrThread implements Runnable {
 				String word = words.get("words").trim();
 				//从匹配出的字符串中截取需要的发票代码信息
 				if(word.matches(fpdmRegex)){
-					userSession.setFaPiaoDaiMa(word);
 					Pattern compile = Pattern.compile(fpdmSubRegex);
 					Matcher matcher = compile.matcher(word);
 					if(matcher.find()){
 						fpdm = matcher.group();
+						userSession.setFaPiaoDaiMa(fpdm);
 					}
 				}
 				//从匹配出的字符串中截取需要的发票号码信息
 				else if(word.matches(fphmRegex)){
-					userSession.setFaPiaoHaoMa(word);
 					Pattern compile = Pattern.compile(fphmSubRegex);
 					Matcher matcher = compile.matcher(word);
 					if(matcher.find()){
 						fphm = matcher.group();
 						if(!StringUtils.isEmpty(fpdm)){
+							userSession.setFaPiaoHaoMa(fphm);
 							break;
 						}
 					}
@@ -138,7 +138,7 @@ public class OcrThread implements Runnable {
 		//如果common用户对应的session中已经存在验证码信息,则直接请求国税局网站查询验旧日期
 		if(!StringUtils.isEmpty(commonSession.getYanzhengma())){
 			try {
-				String checkResult = gsjService.check(commonSession, commonSession.getYanzhengma());
+				String checkResult = gsjService.check(realSession, commonSession.getYanzhengma(),commonSession.getGsjSessionId());
 				GsjSession userSession = GsjSessionUtil.getSessionByWechatUserId(userId);
 				userSession.setResult(checkResult);
 			} catch (Exception e) {
