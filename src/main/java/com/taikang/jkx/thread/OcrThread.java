@@ -119,6 +119,9 @@ public class OcrThread implements Runnable {
 					Matcher matcher = compile.matcher(word);
 					if(matcher.find()){
 						fphm = matcher.group();
+						if(!StringUtils.isEmpty(fpdm)){
+							break;
+						}
 					}
 				}
 			}
