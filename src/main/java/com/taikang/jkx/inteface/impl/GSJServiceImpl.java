@@ -19,17 +19,22 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.DataNode;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.alibaba.fastjson.JSONObject;
 import com.taikang.jkx.bo.CaptchaBO;
 import com.taikang.jkx.bo.GsjSession;
 import com.taikang.jkx.inteface.GSJService;
 import com.taikang.jkx.util.GsjSessionUtil;
 import com.taikang.jkx.util.HttpClientCreator;
+
 
 /**
  * 实现操作国税局网站的相关操作
@@ -54,15 +59,19 @@ public class GSJServiceImpl implements GSJService {
 
 	@Value("${gsj.sessionIdExpireTime}")
 	private long gsjSessionExpireTime;
+	
+	private Logger log = LoggerFactory.getLogger(this.getClass());
 
 	@Override
 	public GsjSession getSessionIDFromGsj(String userId) throws ClientProtocolException, IOException {
 
 		// 先判断本地系统中存储的sessionID是否已过期，如果过期了就移除。
+		log.info("国税局session过期时间为:"+gsjSessionExpireTime);
 		GsjSessionUtil.expireGsjSesionByUserId(userId, gsjSessionExpireTime);
 		// 先从数据库中查看当前微信用户是否已存在sessionID。,如果没有,请求网站获取一个.
 		GsjSession sessionByWechatUserId = GsjSessionUtil.getSessionByWechatUserId(userId);
 		if (sessionByWechatUserId != null) {
+			log.info("执行国税局session清理之后,我存活下来了");
 			return sessionByWechatUserId;
 		}
 		String JSESSIONID = "";
@@ -148,6 +157,7 @@ public class GSJServiceImpl implements GSJService {
 	@Override
 	public String check(GsjSession sessionByWechatUserId, String content) throws ClientProtocolException, IOException {
 		
+		System.out.println(JSONObject.toJSONString(sessionByWechatUserId));
 		//通过httpClient请求
 		CloseableHttpClient httpClient = httpClinetCreator.getHttpClient();
 		HttpPost post = new HttpPost(yanjiuUrl);
@@ -198,6 +208,16 @@ public class GSJServiceImpl implements GSJService {
 		Element result = parse.selectFirst("td[class=red_12]");
 		if(result==null){
 			result = parse.selectFirst("script");
+			if(result!=null){
+				System.out.println("验证结果中包含script脚本");
+				List<DataNode> dataNodes = result.dataNodes();
+				DataNode dataNode = dataNodes.get(0);
+				String wholeData = dataNode.getWholeData();
+				return wholeData;
+			}
+		}
+		if(result == null){
+			result = parse.selectFirst("a[href=cx_sgfplxcx.jsp]").selectFirst("font");
 		}
 		return result.text();
 	}

@@ -53,7 +53,7 @@ public class WXController {
 		if (CommonUtil.MessageTypeText.equals(realUserMessage.getMsgType())) {
 			//如果文字信息长度为4个字符,那么上传到是验证码信息
 			if(realUserMessage.getContent().length()==4){
-				String yanjiuMessage = gsjService.check(GsjSessionUtil.getSessionByWechatUserId(commonUserMessage.getFromUserName()),realUserMessage.getContent());
+				String yanjiuMessage = gsjService.check(GsjSessionUtil.getSessionByWechatUserId(realUserMessage.getFromUserName()),realUserMessage.getContent());
 				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, yanjiuMessage);
 			}else if(CommonUtil.REQUEST_MESSAGE_JG.equals(realUserMessage.getMsgType())){
 				//如果文字内容为jg,那么认为要查看查询结果

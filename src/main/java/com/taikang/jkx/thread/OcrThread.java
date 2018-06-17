@@ -7,6 +7,8 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -17,6 +19,7 @@ import org.opencv.core.Scalar;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.springframework.util.StringUtils;
 
+import com.alibaba.fastjson.JSONObject;
 import com.taikang.jkx.bo.GsjSession;
 import com.taikang.jkx.bo.SampleBO;
 import com.taikang.jkx.bo.WeChatCommunicationBO;
@@ -24,6 +27,7 @@ import com.taikang.jkx.inteface.AipOcrClientService;
 import com.taikang.jkx.inteface.GSJService;
 import com.taikang.jkx.util.ApplicationContextHolder;
 import com.taikang.jkx.util.GsjSessionUtil;
+import com.taikang.jkx.util.HttpClientCreator;
 
 /**
  * 异步执行文字识别的类
@@ -42,8 +46,8 @@ public class OcrThread implements Runnable {
 	public OcrThread(WeChatCommunicationBO wc,String userId){
 		this.messageFromXML = wc;
 		this.aipOcrClient = ApplicationContextHolder.getApplicationContext().getBean(AipOcrClientService.class);
-		this.httpClient = ApplicationContextHolder.getApplicationContext().getBean(CloseableHttpClient.class);
-		this.commonSession = null;
+		this.httpClient = ApplicationContextHolder.getApplicationContext().getBean(HttpClientCreator.class).getHttpClient();
+		this.commonSession = GsjSessionUtil.getSessionByWechatUserId(wc.getFromUserName());
 		this.gsjService =  ApplicationContextHolder.getApplicationContext().getBean(GSJService.class);
 		this.userId = userId;
 	}
@@ -70,7 +74,8 @@ public class OcrThread implements Runnable {
 			//使用opencv技术将图片二值化
 			System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 			Mat mat = Imgcodecs.imread(picName+".jpg");
-			Core.inRange(mat, new Scalar(0,0,0), new Scalar(100,100,100), mat);
+			int threshold = 110;
+			Core.inRange(mat, new Scalar(0,0,0), new Scalar(threshold,threshold,threshold), mat);
 			filename = UUID.randomUUID().toString().replace("-", "");
 			filename = filename+".jpg";
 			Imgcodecs.imwrite(filename, mat);
@@ -81,6 +86,7 @@ public class OcrThread implements Runnable {
 		//调用ocr接口进行发票号码识别
 		SampleBO basicGeneralUrl = aipOcrClient.basicGeneral(filename);
 		List<Map<String, String>> words_result = basicGeneralUrl.getWords_result();
+		System.out.println(JSONObject.toJSONString(words_result));
 		if(words_result!=null&&words_result.size()>1){
 			GsjSession userSession = GsjSessionUtil
 					.getSessionByWechatUserId(userId);
@@ -88,13 +94,37 @@ public class OcrThread implements Runnable {
 				userSession = new GsjSession();
 				GsjSessionUtil.setGsjSession(userId, userSession);
 			}
-			//TODO 待优化的点.如果识别出的结果比要的文字字数多,要能区分哪些是需要的信息哪些不是.
-			String fpdm = words_result.get(0).get("words");
-			String fphm = words_result.get(1).get("words");
-			userSession.setFaPiaoDaiMa(fpdm);
-			userSession.setFaPiaoHaoMa(fphm);
+			//截取需要的信息
+			String fpdm = "";
+			String fphm = "";
+			String fpdmRegex = ".*[^0-9]*[0-9]{12}[^0-9]*.*";
+			String fpdmSubRegex = "[0-9]{12}";
+			String fphmRegex = ".*[^0-9]*[0-9]{8}[^0-9]*.*";
+			String fphmSubRegex = "[0-9]{8}";
+			for(Map<String,String> words : words_result){
+				String word = words.get("words").trim();
+				//从匹配出的字符串中截取需要的发票代码信息
+				if(word.matches(fpdmRegex)){
+					userSession.setFaPiaoDaiMa(word);
+					Pattern compile = Pattern.compile(fpdmSubRegex);
+					Matcher matcher = compile.matcher(word);
+					if(matcher.find()){
+						fpdm = matcher.group();
+					}
+				}
+				//从匹配出的字符串中截取需要的发票号码信息
+				else if(word.matches(fphmRegex)){
+					userSession.setFaPiaoHaoMa(word);
+					Pattern compile = Pattern.compile(fphmSubRegex);
+					Matcher matcher = compile.matcher(word);
+					if(matcher.find()){
+						fphm = matcher.group();
+					}
+				}
+			}
 			
 			try {
+				//从国税局网站获取md5v信息
 				String md5v = gsjService.getMd5v(fpdm, fphm, GsjSessionUtil.getSessionByWechatUserId(messageFromXML.getFromUserName()).getGsjSessionId());
 				userSession.setMd5v(md5v);
 			} catch (IOException e) {
