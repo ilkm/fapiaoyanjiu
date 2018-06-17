@@ -65,6 +65,7 @@ public class GsjSessionUtil {
 	 * @param expireTime
 	 */
 	public static void expireGsjSesionByUserId(String userId,long expireTime){
+		log.debug("清理指定人员session的逻辑被执行了");
 		GsjSession gsjSession = gsjSessions.get(userId);
 		if(gsjSession!=null&&System.currentTimeMillis() - gsjSession.getCreateTime() > expireTime){
 			log.debug("当前时间和session创建时间时间差为:"+(System.currentTimeMillis() - gsjSession.getCreateTime()));
