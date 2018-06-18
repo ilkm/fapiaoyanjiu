@@ -116,7 +116,13 @@ public class WechatServiceImpl implements WechatService {
 		post.setEntity(requestEntity);
 		CloseableHttpResponse response = httpClient.execute(post);
 		log.debug(response.getStatusLine().toString());
-		log.debug(response.getEntity().toString());
+		HttpEntity entity = response.getEntity();
+		InputStream content2 = entity.getContent();
+		char[] temp = new char[2048];
+		InputStreamReader reader = new InputStreamReader(content2);
+		int read = reader.read(temp);
+		String str = new String(temp, 0, read);
+		log.debug(str);
 	}
 
 }

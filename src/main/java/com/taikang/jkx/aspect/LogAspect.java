@@ -1,7 +1,6 @@
 package com.taikang.jkx.aspect;
 
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.Signature;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
@@ -20,7 +19,7 @@ public class LogAspect {
 	
 	@Around("timeLogStub()")
 	public Object around(ProceedingJoinPoint pjp){
-		Class<? extends ProceedingJoinPoint> class1 = pjp.getClass();
+		Class<? extends Object> class1 = pjp.getTarget().getClass();
 		MethodSignature signature = (MethodSignature) pjp.getSignature();
 		long startTime = System.currentTimeMillis();
 		try {
