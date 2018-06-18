@@ -76,8 +76,7 @@ public class WXController {
 			//=================修改为不是每次都去请求,如果没有有效的验证码再去请求
 			if(StringUtils.isEmpty(sessionIDFromGsj.getYanzhengma())){
 				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, "正在生成验证码请稍后...");
-				new Thread(new CaptchaThread()).start();
-				
+				new Thread(new CaptchaThread(realUserMessage)).start();
 			}else{
 				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, "正在查验请稍后....");
 			}
