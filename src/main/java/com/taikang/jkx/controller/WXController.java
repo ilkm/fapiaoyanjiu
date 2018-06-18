@@ -27,6 +27,8 @@ import com.taikang.jkx.bo.GsjSession;
 import com.taikang.jkx.bo.WeChatCommunicationBO;
 import com.taikang.jkx.inteface.GSJService;
 import com.taikang.jkx.inteface.WechatService;
+import com.taikang.jkx.thread.CaptchaThread;
+import com.taikang.jkx.thread.CheckThread;
 import com.taikang.jkx.thread.OcrThread;
 import com.taikang.jkx.util.GsjSessionUtil;
 
@@ -55,11 +57,9 @@ public class WXController {
 		if (CommonUtil.MessageTypeText.equals(realUserMessage.getMsgType())) {
 			//如果文字信息长度为4个字符,那么上传到是验证码信息
 			if(realUserMessage.getContent().length()==4){
-				GsjSession commonUserSession = GsjSessionUtil.getSessionByWechatUserId(GsjSessionUtil.COMMON_USER_ID);
-				commonUserSession.setYanzhengma(realUserMessage.getContent());
-				String yanjiuMessage = gsjService.check(GsjSessionUtil.getSessionByWechatUserId(realUserMessage.getFromUserName()),realUserMessage.getContent(),commonUserSession.getGsjSessionId());
-				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, yanjiuMessage);
-			}else if(CommonUtil.REQUEST_MESSAGE_JG.equals(realUserMessage.getMsgType())){
+				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, "正在查验请稍后....");
+				new Thread(new CheckThread(realUserMessage)).start();
+			}else if(CommonUtil.REQUEST_MESSAGE_JG.equals(realUserMessage.getContent())){
 				//如果文字内容为jg,那么认为要查看查询结果
 				GsjSession sessionByWechatUserId = GsjSessionUtil.getSessionByWechatUserId(realUserMessage.getFromUserName());
 				String resultMessage = sessionByWechatUserId.getResult();
@@ -75,23 +75,14 @@ public class WXController {
 			GsjSession sessionIDFromGsj = gsjService.getSessionIDFromGsj(commonUserMessage.getFromUserName());
 			//=================修改为不是每次都去请求,如果没有有效的验证码再去请求
 			if(StringUtils.isEmpty(sessionIDFromGsj.getYanzhengma())){
+				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, "正在生成验证码请稍后...");
+				new Thread(new CaptchaThread()).start();
 				
-				//拿着国税局网站的sessionID去请求验证码图片
-				CaptchaBO captchaBySessionID = gsjService.getCaptchaBySessionID(sessionIDFromGsj.getGsjSessionId());
-				//将从国税局拿到的验证码作为临时图片素材上传到微信公众平台
-				String mediaId = wechatService.uploadTempMedia(captchaBySessionID);
-				result = generateResponse(realUserMessage, CommonUtil.MessageTypeImage, mediaId);
-				//将发票信息上传到百度云进行文字识别
-				Thread td = new Thread(new OcrThread(commonUserMessage,realUserMessage.getFromUserName()));
-				td.start();
 			}else{
-				OcrThread ocr = new OcrThread(commonUserMessage, realUserMessage.getFromUserName());
-				ocr.run();
-				GsjSession sessionByWechatUserId = GsjSessionUtil.getSessionByWechatUserId(realUserMessage.getFromUserName());
-				String resultMessage = sessionByWechatUserId.getResult();
-				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, resultMessage);
-//				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, "正在查询,请5秒后回复【"+CommonUtil.REQUEST_MESSAGE_JG+"】查看查询结果...");
+				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, "正在查验请稍后....");
 			}
+			//将发票信息上传到百度云进行文字识别
+			new Thread(new OcrThread(commonUserMessage,realUserMessage.getFromUserName())).start();
 		}
 		log.info(result);
 		return result;

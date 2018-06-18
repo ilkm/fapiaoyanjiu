@@ -20,11 +20,13 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.springframework.util.StringUtils;
 
 import com.alibaba.fastjson.JSONObject;
+import com.taikang.jkx.bo.CommonUtil;
 import com.taikang.jkx.bo.GsjSession;
 import com.taikang.jkx.bo.SampleBO;
 import com.taikang.jkx.bo.WeChatCommunicationBO;
 import com.taikang.jkx.inteface.AipOcrClientService;
 import com.taikang.jkx.inteface.GSJService;
+import com.taikang.jkx.inteface.WechatService;
 import com.taikang.jkx.util.ApplicationContextHolder;
 import com.taikang.jkx.util.GsjSessionUtil;
 import com.taikang.jkx.util.HttpClientCreator;
@@ -42,6 +44,7 @@ public class OcrThread implements Runnable {
 	private CloseableHttpClient httpClient;
 	private GsjSession commonSession;
 	private GSJService gsjService;
+	private WechatService wechatService;
 
 	public OcrThread(WeChatCommunicationBO wc,String userId){
 		this.messageFromXML = wc;
@@ -49,6 +52,7 @@ public class OcrThread implements Runnable {
 		this.httpClient = ApplicationContextHolder.getApplicationContext().getBean(HttpClientCreator.class).getHttpClient();
 		this.commonSession = GsjSessionUtil.getSessionByWechatUserId(wc.getFromUserName());
 		this.gsjService =  ApplicationContextHolder.getApplicationContext().getBean(GSJService.class);
+		this.wechatService = ApplicationContextHolder.getApplicationContext().getBean(WechatService.class);
 		this.userId = userId;
 	}
 	
@@ -141,6 +145,8 @@ public class OcrThread implements Runnable {
 				String checkResult = gsjService.check(realSession, commonSession.getYanzhengma(),commonSession.getGsjSessionId());
 				GsjSession userSession = GsjSessionUtil.getSessionByWechatUserId(userId);
 				userSession.setResult(checkResult);
+				//调用客服消息接口将结果告知用户
+				wechatService.replyToUser(userId, CommonUtil.MessageTypeText, checkResult);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
