@@ -1,4 +1,4 @@
-package com.taikang.jkx.bo;
+package com.taikang.jkx.util;
 
 public class CommonUtil {
 
@@ -14,4 +14,5 @@ public class CommonUtil {
 	public static final String MessageTypeImage = "image";
 	
 	public static final String REQUEST_MESSAGE_JG = "jg";
+	public static String COMMON_USER_ID = "commonUser";
 }

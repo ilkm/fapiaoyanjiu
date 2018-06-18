@@ -22,12 +22,12 @@ import org.xml.sax.SAXException;
 
 import com.alibaba.fastjson.JSONObject;
 import com.taikang.jkx.bo.CaptchaBO;
-import com.taikang.jkx.bo.CommonUtil;
 import com.taikang.jkx.bo.GsjSession;
 import com.taikang.jkx.bo.WeChatCommunicationBO;
 import com.taikang.jkx.inteface.GSJService;
 import com.taikang.jkx.inteface.WechatService;
 import com.taikang.jkx.thread.OcrThread;
+import com.taikang.jkx.util.CommonUtil;
 import com.taikang.jkx.util.GsjSessionUtil;
 
 @RestController
@@ -49,13 +49,13 @@ public class WXController {
 		
 		String jsonString = JSONObject.toJSONString(realUserMessage);
 		WeChatCommunicationBO commonUserMessage = JSONObject.parseObject(jsonString, WeChatCommunicationBO.class);
-		commonUserMessage.setFromUserName(GsjSessionUtil.COMMON_USER_ID);
+		commonUserMessage.setFromUserName(CommonUtil.COMMON_USER_ID);
 		// 根据消息内容调用逻辑
 		//如果是文字信息
 		if (CommonUtil.MessageTypeText.equals(realUserMessage.getMsgType())) {
 			//如果文字信息长度为4个字符,那么上传到是验证码信息
 			if(realUserMessage.getContent().length()==4){
-				GsjSession commonUserSession = GsjSessionUtil.getSessionByWechatUserId(GsjSessionUtil.COMMON_USER_ID);
+				GsjSession commonUserSession = GsjSessionUtil.getSessionByWechatUserId(CommonUtil.COMMON_USER_ID);
 				commonUserSession.setYanzhengma(realUserMessage.getContent());
 				String yanjiuMessage = gsjService.check(GsjSessionUtil.getSessionByWechatUserId(realUserMessage.getFromUserName()),realUserMessage.getContent(),commonUserSession.getGsjSessionId());
 				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, yanjiuMessage);
