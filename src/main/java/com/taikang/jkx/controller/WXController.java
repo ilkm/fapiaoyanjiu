@@ -58,8 +58,10 @@ public class WXController {
 				GsjSession commonUserSession = GsjSessionUtil.getSessionByWechatUserId(CommonUtil.COMMON_USER_ID);
 				commonUserSession.setYanzhengma(realUserMessage.getContent());
 				String yanjiuMessage = gsjService.check(GsjSessionUtil.getSessionByWechatUserId(realUserMessage.getFromUserName()),realUserMessage.getContent(),commonUserSession.getGsjSessionId());
+				GsjSession realUserSession = GsjSessionUtil.getSessionByWechatUserId(realUserMessage.getFromUserName());
+				realUserSession.setResult(yanjiuMessage);
 				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, yanjiuMessage);
-			}else if(CommonUtil.REQUEST_MESSAGE_JG.equals(realUserMessage.getMsgType())){
+			}else if(CommonUtil.REQUEST_MESSAGE_JG.equals(realUserMessage.getContent())){
 				//如果文字内容为jg,那么认为要查看查询结果
 				GsjSession sessionByWechatUserId = GsjSessionUtil.getSessionByWechatUserId(realUserMessage.getFromUserName());
 				String resultMessage = sessionByWechatUserId.getResult();
@@ -90,7 +92,6 @@ public class WXController {
 				GsjSession sessionByWechatUserId = GsjSessionUtil.getSessionByWechatUserId(realUserMessage.getFromUserName());
 				String resultMessage = sessionByWechatUserId.getResult();
 				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, resultMessage);
-//				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, "正在查询,请5秒后回复【"+CommonUtil.REQUEST_MESSAGE_JG+"】查看查询结果...");
 			}
 		}
 		log.info(result);
