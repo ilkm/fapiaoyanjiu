@@ -19,6 +19,23 @@ public class GsjSession {
 	
 	private String md5v ;
 	
+	private String yanzhengma;
+	
+	private String result;
+	public String getResult() {
+		return result;
+	}
+	public void setResult(String result) {
+		this.result = result;
+	}
+	
+	public String getYanzhengma() {
+		return yanzhengma;
+	}
+	public void setYanzhengma(String yanzhengma) {
+		this.yanzhengma = yanzhengma;
+	}
+	
 	public String getMd5v() {
 		return md5v;
 	}

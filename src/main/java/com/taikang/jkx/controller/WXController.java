@@ -11,6 +11,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.jdom2.JDOMException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,65 +20,70 @@ import org.springframework.web.bind.annotation.RestController;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import com.alibaba.fastjson.JSONObject;
 import com.taikang.jkx.bo.CaptchaBO;
 import com.taikang.jkx.bo.CommonUtil;
+import com.taikang.jkx.bo.GsjSession;
 import com.taikang.jkx.bo.WeChatCommunicationBO;
-import com.taikang.jkx.inteface.AipOcrClientService;
 import com.taikang.jkx.inteface.GSJService;
 import com.taikang.jkx.inteface.WechatService;
+import com.taikang.jkx.thread.CaptchaThread;
+import com.taikang.jkx.thread.CheckThread;
 import com.taikang.jkx.thread.OcrThread;
 import com.taikang.jkx.util.GsjSessionUtil;
-import com.taikang.jkx.util.HttpClientCreator;
 
 @RestController
 public class WXController {
 
 	@Autowired
-	private AipOcrClientService aipOcrClient;
-	@Autowired
 	private GSJService gsjService;
 	@Autowired
 	private WechatService wechatService;
-	@Autowired
-	private HttpClientCreator clientCreator;
+	
+	private Logger log = LoggerFactory.getLogger(WXController.class);
 
 	@PostMapping("/wx")
 	public String hello(HttpServletRequest request, String signature, String timestamp, int nonce, String echostr)
 			throws IOException, JDOMException, ParserConfigurationException, SAXException {
-		long start = System.currentTimeMillis();
-		System.out.println(start);
 		String result = "";
 		// 解析消息内容
-		WeChatCommunicationBO messageFromXML = getMessageFromXML(request);
-
+		WeChatCommunicationBO realUserMessage = getMessageFromXML(request);
+		
+		String jsonString = JSONObject.toJSONString(realUserMessage);
+		WeChatCommunicationBO commonUserMessage = JSONObject.parseObject(jsonString, WeChatCommunicationBO.class);
+		commonUserMessage.setFromUserName(GsjSessionUtil.COMMON_USER_ID);
 		// 根据消息内容调用逻辑
 		//如果是文字信息
-		if (CommonUtil.MessageTypeText.equals(messageFromXML.getMsgType())) {
-			if(messageFromXML.getContent().length()==4){
-				String yanjiuMessage = gsjService.check(GsjSessionUtil.getSessionByWechatUserId(messageFromXML.getFromUserName()),messageFromXML.getContent());
-				result = generateResponse(messageFromXML, CommonUtil.MessageTypeText, yanjiuMessage);
+		if (CommonUtil.MessageTypeText.equals(realUserMessage.getMsgType())) {
+			//如果文字信息长度为4个字符,那么上传到是验证码信息
+			if(realUserMessage.getContent().length()==4){
+				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, "正在查验请稍后....");
+				new Thread(new CheckThread(realUserMessage)).start();
+			}else if(CommonUtil.REQUEST_MESSAGE_JG.equals(realUserMessage.getContent())){
+				//如果文字内容为jg,那么认为要查看查询结果
+				GsjSession sessionByWechatUserId = GsjSessionUtil.getSessionByWechatUserId(realUserMessage.getFromUserName());
+				String resultMessage = sessionByWechatUserId.getResult();
+				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, resultMessage);
 			}else{
-				result = generateResponse(messageFromXML, CommonUtil.MessageTypeText, messageFromXML.getContent());
+				//默认返回发送的文字信息
+				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, realUserMessage.getContent());
 			}
 		}
 		// 如果发送的是图片信息给用户返回一个验证码,并异步调用文字识别接口进行文字识别，
-		if (CommonUtil.MessageTypeImage.equals(messageFromXML.getMsgType())) {
+		if (CommonUtil.MessageTypeImage.equals(realUserMessage.getMsgType())) {
 			//先想国税局网站请求sessionID信息
-			String sessionIDFromGsj = gsjService.getSessionIDFromGsj(messageFromXML.getFromUserName());
-			//拿着国税局网站的sessionID去请求验证码图片
-			CaptchaBO captchaBySessionID = gsjService.getCaptchaBySessionID(sessionIDFromGsj);
-			//将从国税局拿到的验证码作为临时图片素材上传到微信公众平台
-			String mediaId = wechatService.uploadTempMedia(captchaBySessionID);
-			result = generateResponse(messageFromXML, CommonUtil.MessageTypeImage, mediaId);
+			GsjSession sessionIDFromGsj = gsjService.getSessionIDFromGsj(commonUserMessage.getFromUserName());
+			//=================修改为不是每次都去请求,如果没有有效的验证码再去请求
+			if(StringUtils.isEmpty(sessionIDFromGsj.getYanzhengma())){
+				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, "正在生成验证码请稍后...");
+				new Thread(new CaptchaThread(realUserMessage)).start();
+			}else{
+				result = generateResponse(realUserMessage, CommonUtil.MessageTypeText, "正在查验请稍后....");
+			}
 			//将发票信息上传到百度云进行文字识别
-			Thread td = new Thread(new OcrThread(messageFromXML,aipOcrClient,clientCreator.getHttpClient()));
-			td.start();
+			new Thread(new OcrThread(commonUserMessage,realUserMessage.getFromUserName())).start();
 		}
-
-		System.out.println("返回消息给"+messageFromXML.getFromUserName());
-		System.out.println(result);
-		long endTime = System.currentTimeMillis();
-		System.out.println("用时:"+(endTime-start)/1000+"秒");
+		log.info(result);
 		return result;
 	}
 
