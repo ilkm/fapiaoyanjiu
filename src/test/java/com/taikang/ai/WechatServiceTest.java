@@ -9,18 +9,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.taikang.jkx.RootApplication;
-import com.taikang.jkx.inteface.GSJService;
-import com.taikang.jkx.inteface.WechatService;
 import com.taikang.jkx.util.AccessTokenManager;
 
 @SpringBootTest(classes=RootApplication.class)
 @RunWith(SpringRunner.class)
 public class WechatServiceTest {
 	
-	@Autowired
-	private WechatService wechatService;
-	@Autowired
-	private GSJService gsjService;
 	@Autowired
 	private AccessTokenManager accessTokenManager;
 
